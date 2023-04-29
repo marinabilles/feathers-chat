@@ -1,23 +1,27 @@
 hidden=[".config", ".github", ".gitignore", ".prettierrc", "quick-start", "react-chat"]
 
 run = """
-if [ ! -x "$(command -v feathers)" ]; then
-  npm i -g @feathersjs/cli
-fi
-
 cd feathers-chat-ts
-clear
 npm run dev
 """ # """
 
 compile = """ # Runs before debug too. Lacks custom env vars.
+SECONDS=0
+FEATHERS_DIR="feathers-chat-ts"
 clear
-echo Running compile...
-if [ ! -d "feathers-chat-ts/node_modules" ]; then
-  cd feathers-chat-ts
-  npm i
-  npm run compile
-  npm run migrate
+echo [compile]
+
+if [ ! -d "$FEATHERS_DIR/node_modules" ]; then
+  cd $FEATHERS_DIR
+  npm i &> /dev/null
+  export PERF1=$SECONDS
+  # npm run migrate # Most of the time, optional
+  
+  # For TS clients
+  # npm run compile # Drastically faster dev cold boot without
+  # npm run bundle:client # Generates .tgz types for loading into TS clients
+  
+  export PERF2=$(($SECONDS - $PERF1))
   cd -
 fi
 
@@ -25,24 +29,30 @@ fi
 mkdir -p .config
 if [ ! -f "./.config/replit.mjs" ]; then
 cat << EOF > ./.config/replit.mjs
-// Resolve FEATHERS_DIR path and cd to it
-console.log(process.env.NODE_PATH)
 if (process.env.FEATHERS_DIR) {
-  const p = process.env.FEATHERS_DIR
-  const f = new Function('return \\`' + p + '\\`;').call(process.env)
-  process.chdir(f)
+  process.chdir(process.env.FEATHERS_DIR)
 }
 EOF
 fi
 
+rm tsconfig.json 2> /dev/null || : # Cleanup upstream debris
+
 if [ ! -f "./.config/bashrc" ]; then
 cat << EOF > ./.config/bashrc
 #!/bin/bash
-node --version
+echo Node version: "$(node --version)"
 EOF
 fi
 
-rm tsconfig.json 2> /dev/null || : # Cleanup upstream debris
+INDEX_TS="$FEATHERS_DIR/src/index.ts"
+if ! grep -q "console.time" "$INDEX_TS"; then
+sed -i "1i console.time('App startup time')" "$INDEX_TS"
+sed -i "/Feathers app listening on /a console.timeEnd('App startup time')" "$INDEX_TS"
+clear
+echo "[compile] took ${SECONDS}s. ($PERF1 + $PERF2)"
+else
+clear
+fi
 """ # """
 
 
@@ -65,20 +75,16 @@ externalPort = 9000
 channel = "stable-22_11"
 
 [env]
-PATH = "/home/runner/$REPL_SLUG/.config/npm/node_global/bin:/home/runner/$REPL_SLUG/node_modules/.bin"
+FEATHERS_DIR = "feathers-chat-ts"
+PATH = "/home/runner/$REPL_SLUG/.config/npm/node_global/bin:/home/runner/$REPL_SLUG/node_modules/.bin:/home/runner/$REPL_SLUG/$FEATHERS_DIR/node_modules/.bin"
 EDITOR="replit-git-editor"
-npm_config_yes="true"
 npm_config_prefix = "/home/runner/$REPL_SLUG/.config/npm/node_global"
 HOSTNAME="0.0.0.0"
 NODE_OPTIONS="--max_old_space_size=384"
 
-# Enables Secrets and Repl Auth, without the erratic Replit packagers
+# Enables Secrets and Auth, without the Replit packager
 [packager]
 language = "bash"
-
-# Todo: Currently uses mocha by default, use npm run test instead or Test Runner
-# [unitTest]
-# language = "nodejs"
 
 [languages.typescript]
 pattern = "**/{*.ts,*.js,*.tsx,*.jsx}"
@@ -133,5 +139,4 @@ support = true
 
       [debugger.interactive.launchMessage.arguments.env]
       PORT = 9000
-      FEATHERS_DIR = "${this.HOME}/${this.REPL_SLUG}/feathers-chat-ts"
 
