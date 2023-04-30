@@ -8,22 +8,26 @@ npm run dev
 compile = """ # Runs before debug too. Lacks custom env vars.
 SECONDS=0
 FEATHERS_DIR="feathers-chat-ts"
+FEATHERS_ORIGIN="https://$REPL_SLUG.$REPL_OWNER.repl.co"
 clear
 echo [compile]
 
 if [ ! -d "$FEATHERS_DIR/node_modules" ]; then
   cd $FEATHERS_DIR
   npm i &> /dev/null
-  export PERF1=$SECONDS
-  npm run migrate # Sets up the tables, login will not work without this!l
   
   # For TS clients
   # npm run compile # Drastically faster dev cold boot without
   # npm run bundle:client # Generates .tgz types for loading into TS clients
-  
-  export PERF2=$(($SECONDS - $PERF1))
   cd -
 fi
+PERF1=$SECONDS
+
+# Sets up the tables, login will not work without this!
+if [ ! -f "$FEATHERS_DIR/feathers-chat.sqlite" ]; then
+  sh -c "cd '$FEATHERS_DIR'; npm run migrate"
+fi
+PERF2=$(($SECONDS - $PERF1))
 
 # Helper script to deal with lack of CWD support in the Debugger
 mkdir -p .config
@@ -44,14 +48,23 @@ echo Node version: "$(node --version)"
 EOF
 fi
 
+# Append origin for OAuth. Alternatively, set it as an env var
+CONFIG_FILE="$FEATHERS_DIR/config/default.json"
+if ! grep -q "$FEATHERS_ORIGIN" "$CONFIG_FILE"; then
+  sed -i "/\\"origins\\"/a \\    \\"$FEATHERS_ORIGIN\\"," "$CONFIG_FILE"
+fi
+
 INDEX_TS="$FEATHERS_DIR/src/index.ts"
 if ! grep -q "console.time" "$INDEX_TS"; then
-sed -i "1i console.time('App startup time')" "$INDEX_TS"
-sed -i "/Feathers app listening on /a console.timeEnd('App startup time')" "$INDEX_TS"
-clear
-echo "[compile] took ${SECONDS}s. ($PERF1 + $PERF2)"
+  sed -i "/Feathers app listening on /a \\
+    \\  logger.info(\\`Remote: \\${process.env.FEATHERS_ORIGIN}\\`)\\n\\
+  console.timeEnd('App startup time')" "$INDEX_TS"
+  
+  sed -i "1i console.time('App startup time')" "$INDEX_TS"
+  clear
+  echo "[compile] took ${SECONDS}s. ($PERF1 + $PERF2)"
 else
-clear
+  clear
 fi
 """ # """
 
@@ -77,10 +90,11 @@ channel = "stable-22_11"
 [env]
 FEATHERS_DIR = "feathers-chat-ts"
 PATH = "/home/runner/$REPL_SLUG/.config/npm/node_global/bin:/home/runner/$REPL_SLUG/node_modules/.bin:/home/runner/$REPL_SLUG/$FEATHERS_DIR/node_modules/.bin"
-EDITOR="replit-git-editor"
+EDITOR = "replit-git-editor"
 npm_config_prefix = "/home/runner/$REPL_SLUG/.config/npm/node_global"
-HOSTNAME="0.0.0.0"
-NODE_OPTIONS="--max_old_space_size=384"
+HOSTNAME = "0.0.0.0"
+FEATHERS_ORIGIN = "https://$REPL_SLUG.$REPL_OWNER.repl.co"
+NODE_OPTIONS = "--max_old_space_size=384"
 
 # Enables Secrets and Auth, without the Replit packager
 [packager]
@@ -139,4 +153,5 @@ support = true
 
       [debugger.interactive.launchMessage.arguments.env]
       PORT = 9000
+      FEATHERS_ORIGIN = "https://$REPL_SLUG.$REPL_OWNER.repl.co:9000"
 
