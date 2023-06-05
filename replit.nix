@@ -1,6 +1,4 @@
-{ pkgs }: {
-  deps = [
-    pkgs.nodejs-19_x
-      pkgs.nodePackages.typescript-language-server
-  ];
-}
+{ pkgs }: { deps = with pkgs; [
+    nodejs-19_x
+    nodePackages.typescript-language-server
+  ];}
