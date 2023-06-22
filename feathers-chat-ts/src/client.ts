@@ -4,6 +4,9 @@ import type { TransportConnection, Application } from '@feathersjs/feathers'
 import authenticationClient from '@feathersjs/authentication-client'
 import type { AuthenticationClientOptions } from '@feathersjs/authentication-client'
 
+import { weatherClient } from './services/weather/weather.shared'
+export type { Weather, WeatherData, WeatherQuery } from './services/weather/weather.shared'
+
 import { messageClient } from './services/messages/messages.shared'
 export type { Message, MessageData, MessageQuery, MessagePatch } from './services/messages/messages.shared'
 
@@ -38,5 +41,6 @@ export const createClient = <Configuration = any>(
 
   client.configure(userClient)
   client.configure(messageClient)
+  client.configure(weatherClient)
   return client
 }

@@ -172,7 +172,7 @@ describe('users service (authenticated)', () => {
     let newUser: User | undefined
     try {
       let response = await requester
-          .post("/users/create")
+          .post("/users")
           .send(userData)
 
       expect(response).to.have.status(201)
