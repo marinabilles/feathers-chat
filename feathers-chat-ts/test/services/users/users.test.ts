@@ -248,6 +248,7 @@ describe('users service (authenticated)', () => {
         .post("/authentication")
         .send(authData)
 
+    // we need a new token since a user can only delete itself
     const newAccessToken = response.body.accessToken
     
     const route = `/users/${newUser.id}`
