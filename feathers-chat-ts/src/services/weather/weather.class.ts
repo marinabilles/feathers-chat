@@ -35,7 +35,33 @@ export class WeatherService<ServiceParams extends WeatherParams = WeatherParams>
       }
     })
 
-    return meteos.data
+    let currentDate = new Date(meteos.data.hourly.time[0])
+    const dates = [currentDate]
+    const currentTemperatures: number[] = []
+    const meanTemperatures: number[] = []
+    for (let i: number = 0; i < meteos.data.hourly.time.length; i++) {
+      let date = new Date(meteos.data.hourly.time[i])
+      if (currentDate.getDate() !== date.getDate()) {
+        currentDate = date
+        dates.push(currentDate)
+        const meanTemperature = currentTemperatures.reduce((sum, curr) => sum + curr, 0) /
+            currentTemperatures.length
+        meanTemperatures.push(meanTemperature)
+        currentTemperatures.length = 0
+      }
+
+      currentTemperatures.push(meteos.data.hourly.temperature_2m[i])
+    }
+
+    const meanTemperature = currentTemperatures.reduce((sum, curr) => sum + curr, 0) /
+    currentTemperatures.length
+    meanTemperatures.push(meanTemperature)
+
+    return {
+      ...meteos.data,
+      dates: dates,
+      meanTemperatures: meanTemperatures
+    }
   }
 }
 

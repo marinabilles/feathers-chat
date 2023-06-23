@@ -91,5 +91,16 @@ describe('weather service (authenticated)', () => {
     expect(result.longitude).to.be.closeTo(weatherData.longitude, 0.1)
     expect(Array.isArray(result.hourly.time)).to.be.true
     expect(Array.isArray(result.hourly.temperature_2m)).to.be.true
+    expect(Array.isArray(result.dates)).to.be.true
+    expect(Array.isArray(result.meanTemperatures)).to.be.true
+    expect(result.dates.length).to.equal(7)
+    expect(result.meanTemperatures.length).to.equal(7)
+    for (let i: number = 0; i < 7; i++) {
+      expect(new Date(result.dates[i]).getDate())
+          .to.equal(new Date(result.hourly.time[i * 24]).getDate())
+      const slice: number[] = result.hourly.temperature_2m.slice(i * 24, (i + 1) * 24)
+      const mean = slice.reduce((sum, curr) => sum + curr, 0) / slice.length
+      expect(result.meanTemperatures[i]).to.equal(mean)
+    }
   })
 })
