@@ -250,9 +250,7 @@ describe('users service (authenticated)', () => {
 
     // we need a new token since a user can only delete itself
     const newAccessToken = response.body.accessToken
-
-    const route = 
-    console.log("route: " + route)    
+  
     response = await requester
         .delete(`/users/${newUser.id}`)
         .auth(newAccessToken, {type: 'bearer'})
