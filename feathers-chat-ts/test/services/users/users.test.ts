@@ -36,14 +36,14 @@ describe('users service', () => {
     await app.teardown()
   })
 
-  it('should 401 if not authenticated', async () => {
+  it('401s if not authenticated', async () => {
     const response = await chai.request(server)
         .get("/users")
 
     expect(response).to.have.status(401)
   })
 
-  it('should create new user', async () => {
+  it('creates new user', async () => {
     let userService: any;
     let user: User | undefined;
     try {
@@ -208,7 +208,7 @@ describe('users service (authenticated)', () => {
     userEqual(response.body.data[0], user, false)
   })
 
-  it('using update fails', async () => {
+  it('fails using update', async () => {
     const response = await requester
         .put(`/users/${user.id}`)
         .send({avatar: "avatar-address.example.com"})
@@ -250,11 +250,11 @@ describe('users service (authenticated)', () => {
 
     // we need a new token since a user can only delete itself
     const newAccessToken = response.body.accessToken
-    
-    const route = `/users/${newUser.id}`
-    console.log("route: " + route)
+
+    const route = 
+    console.log("route: " + route)    
     response = await requester
-        .delete(route)
+        .delete(`/users/${newUser.id}`)
         .auth(newAccessToken, {type: 'bearer'})
 
     expect(response).to.have.status(200)
